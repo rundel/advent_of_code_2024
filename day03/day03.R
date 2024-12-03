@@ -32,6 +32,6 @@ for(i in seq_len(nrow(x))) {
   }
 }
 
-sum(as.numeric(x[,2]) * as.numeric(x[,3]))
+sum
 
 
