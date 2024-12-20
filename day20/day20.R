@@ -25,7 +25,7 @@ task1 = function(input) {
     str_split("") |>
     (\(x) do.call(rbind, x))()
   
-
+  
   
   start = which(m == "S", arr.ind = TRUE) |> paste(collapse=",")
   end = which(m == "E", arr.ind = TRUE) |> paste(collapse=",")
@@ -85,31 +85,53 @@ task2 = function(input, cutoff=100) {
   pts = which(m != "#", arr.ind=TRUE)
   pts_lbl = apply(pts, 1, paste, collapse=",")
   
-  dist(pts) |>
+  d = dist(pts) |>
     as.matrix() |>
     (\(x) which(x <= 20 & x > 0, arr.ind=TRUE))() |>
     as.data.frame() |>
     transmute(
       from = pts_lbl[row],
       to = pts_lbl[col]
-    ) |>
+    ) 
+  
+  
+  d2 = d |>
     mutate(
-      forward = map_int(to, ~which(path == .x)) - map_int(from, ~which(path == .x))
+      forward = match(to, path) - match(from, path)
     ) |>
     filter(
       forward > 0
     ) |>
-    select(-forward) |>
+    select(-forward) 
+  
+  to_mat = function(x) {
+    str_split(x,",") |> 
+      unlist() |> 
+      as.numeric() |> 
+      matrix(byrow = TRUE,ncol=2)
+  }
+  
+  d2 |>
     mutate(
-      sc_dist = map2_dbl(from, to, ~sum(abs(to_vec(.x) - to_vec(.y)))),
-      sc_saved = map2_dbl(from, to, ~gd[.x, .y]),
+      sc_dist = (to_mat(from) - to_mat(to)) |> apply(1, function(x) sum(abs(x)))
+    ) |>
+    filter(sc_dist <= 20) |>
+    mutate(
+      i = match(from, rownames(gd)),
+      j = match(to, rownames(gd)),
+      k = (j-1)*nrow(gd) + i,
+      sc_saved = gd[k],
       saved = sc_saved - sc_dist
     ) |>
     arrange(desc(saved)) |>
     as_tibble() |>
-    filter(saved >= cutoff) |>
-    pull(saved) |>
-    table()
+    filter(saved >= cutoff)
 }
 
-task2(test,50)
+(res = task2(test,50))
+
+res |> pull(saved) |> table()
+
+
+(x=task2(input,100))
+nrow(x)
